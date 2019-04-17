@@ -30,7 +30,8 @@ t_ip	ft_get_ip(const char *command)
 	i = 0;
 	while (endptr[i] && isspace(endptr[i]))
 		++i;
-	if (ip.num == 0 || !endptr[i] || strcmp(&(endptr[i]), "count") != 0)
+	if (ip.num == 0 || !endptr[i]
+		|| strncmp(&(endptr[i]), "count", 5) != 0 || endptr[i + 5] != '\n')
 		return ((t_ip)0u);
 	return (ip);
 }
@@ -38,17 +39,12 @@ t_ip	ft_get_ip(const char *command)
 void	ft_get_ip_stat(int socket, t_ip ip)
 {
 	char	msg[MSG_SIZE];
-	char	buffer[10];
 
-	memset(msg, ' ', MSG_SIZE);
+	bzero(msg, MSG_SIZE);
 
 	/* command code - 2 */
-	msg[0] = '2';
+	sprintf(msg, "2 %u\n", ip.num);
 
-	msg[MSG_SIZE - 1] = '\n';
-	memset(buffer, ' ', 10);
-	snprintf(buffer, 10, "%d", ip.num);
-	strncpy(&(msg[2]), buffer, 10);
 	send(socket, msg, strlen(msg), 0);
 }
 
@@ -85,14 +81,8 @@ void	ft_iface_stat(int socket, const char *iface)
 	send(socket, msg, strlen(msg), 0);
 }
 
-void	ft_run(int socket)
+void	ft_kill(int socket)
 {
 	/* command code - 5 */
 	send(socket, "5\n", 2, 0);
-}
-
-void	ft_kill(int socket)
-{
-	/* command code - 6 */
-	send(socket, "6\n", 2, 0);
 }

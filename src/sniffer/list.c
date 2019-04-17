@@ -1,4 +1,5 @@
 
+#include <sys/mman.h>
 #include "list.h"
 #include "utils.h"
 #include "bst.h"
@@ -85,8 +86,11 @@ void			ft_write_log(const char *filename, t_list **head)
 
 	fp = fopen(filename, "w+");
 
-//	fprintf(fp, " --- NEW WRITE LOG ---\n");
-
+	if (fp < 0)
+	{
+		printf("Unable to open log file");
+		return;
+	}
 	lnode = *head;
 	while (lnode)
 	{
@@ -96,28 +100,36 @@ void			ft_write_log(const char *filename, t_list **head)
 	fclose(fp);
 }
 
-void			ft_send_ip_stat(t_list **head, t_ip ip, FILE *fp)
+void			ft_send_ip_stat(t_list **head, t_ip ip, int socket)
 {
 	t_list	*node;
+	char	buffer[64];
 
-	fprintf(fp, "Stat for %hhu.%hhu.%hhu.%hhu:\n",
+	if (!socket)
+		return ;
+
+	bzero(buffer, 64);
+	sprintf(buffer, "\nStat for %hhu.%hhu.%hhu.%hhu:\n",
 		ip.bytes[0],
 		ip.bytes[1],
 		ip.bytes[2],
 		ip.bytes[3]);
+	send(socket, buffer, strlen(buffer), 0);
 
 	node = *head;
 	while (node)
 	{
-		ft_send_ip_count(node->iface, &(node->bst), ip, fp);
+		ft_send_ip_count(node->iface, &(node->bst), ip, socket);
 		node = node->next;
 	}
-	fflush(fp);
 }
 
-void			ft_send_iface_stat(t_list **head, const char *iface, FILE *fp)
+void			ft_send_iface_stat(t_list **head, const char *iface, int socket)
 {
 	t_list	*node;
+
+	if (!socket)
+		return ;
 
 	node = *head;
 	while (node)
@@ -127,15 +139,14 @@ void			ft_send_iface_stat(t_list **head, const char *iface, FILE *fp)
 		node = node->next;
 	}
 	if (node)
-		ft_send_iface_info(iface, &(node->bst), fp);
+		ft_send_iface_info(iface, &(node->bst), socket);
 	else
 	{
 		node = *head;
 		while (node)
 		{
-			ft_send_iface_info(node->iface, &(node->bst), fp);
+			ft_send_iface_info(node->iface, &(node->bst), socket);
 			node = node->next;
 		}
 	}
-	fflush(fp);
 }

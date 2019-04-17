@@ -11,7 +11,7 @@ t_ip			ft_parse_ip(const char *s, char **endptr)
 	block = 0;
 	ptr = NULL;
 
-	/* minimal size of string, containing ip */
+	/* minimal size of string, containing ip_for_stat */
 	if (strlen(s) < 7)
 		return ((t_ip)0u);
 

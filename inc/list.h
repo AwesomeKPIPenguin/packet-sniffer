@@ -19,8 +19,8 @@ typedef struct		s_list
 void				ft_init_from_file(t_list **head, FILE *fp);
 t_list				*ft_search_iface(t_list **head, const char *iface);
 void				ft_write_log(const char *filename, t_list **head);
-void				ft_send_ip_stat(t_list **head, t_ip ip, FILE *fp);
+void				ft_send_ip_stat(t_list **head, t_ip ip, int socket);
 void				ft_send_iface_stat(
-						t_list **head, const char *iface, FILE *fp);
+						t_list **head, const char *iface, int socket);
 
 #endif /* LIST_H */

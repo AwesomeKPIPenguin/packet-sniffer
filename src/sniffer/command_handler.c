@@ -5,17 +5,30 @@ static int	ft_handle_command(t_sniffer_arg *sarg, const char cmd[MSG_SIZE])
 {
 	if (cmd[0] == '0')		/* start */
 	{
-		sarg->flags |= IS_ACTIVE;
+		printf("Received Start\n");
+		if (!(sarg->flags & IS_ACTIVE))
+		{
+			printf("To Start is set\n");
+			sarg->flags |= IS_TO_START;
+		}
 	}
 	else if (cmd[0] == '1')	/* stop */
 	{
-		sarg->flags |= IS_TO_LOG;
-		sarg->flags &= ~IS_ACTIVE;
+		printf("Received stop\n");
+
+		if (sarg->flags & IS_ACTIVE)
+		{
+			printf("To Stop is set\n");
+			sarg->flags |= IS_TO_LOG;
+			sarg->flags |= IS_TO_STOP;
+		}
 	}
-	else if (cmd[0] == '2')	/* show [ip] count */
+	else if (cmd[0] == '2')	/* show [ip_for_stat] count */
 	{
-		sarg->ip.num = strtoul(&(cmd[2]), NULL, 10);
+		sarg->ip_for_stat.num = strtoul(&(cmd[2]), NULL, 10);
 		sarg->flags |= IS_TO_SEND_IP_STAT;
+		ft_send_ip_stat(&(sarg->ifaces), sarg->ip_for_stat, sarg->response_fd);
+		sarg->flags &= ~IS_TO_SEND_IP_STAT;
 	}
 	else if (cmd[0] == '3')	/* select [iface] */
 	{
@@ -25,6 +38,9 @@ static int	ft_handle_command(t_sniffer_arg *sarg, const char cmd[MSG_SIZE])
 	{
 		strncpy(sarg->iface_for_stat, &(cmd[2]), IFACE_SIZE);
 		sarg->flags |= IS_TO_SEND_IFACE_STAT;
+		ft_send_iface_stat(
+			&(sarg->ifaces), sarg->iface_for_stat, sarg->response_fd);
+		sarg->flags &= ~IS_TO_SEND_IFACE_STAT;
 	}
 	else if (cmd[0] == '5')	/* kill */
 	{
@@ -41,12 +57,16 @@ int			ft_command_receiver(FILE *fp, t_sniffer_arg *sarg)
 
 	while (1)
 	{
-		memset(buffer, 0, MSG_SIZE);
+		bzero(buffer, MSG_SIZE);
 		c = 0;
 		for (int i = 0; c != '\n'; ++i)
 		{
+			printf("in for\n");
 			if ((c = fgetc(fp)) < 0)
+			{
+				printf("return\n");
 				return (1);
+			}
 			buffer[i] = (char)c;
 		}
 		if (!ft_handle_command(sarg, buffer))

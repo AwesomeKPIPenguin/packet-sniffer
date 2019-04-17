@@ -25,18 +25,20 @@
 # include <linux/if_packet.h>
 # include <arpa/inet.h>
 
-# define DEFAULT_IFACE			"lo"
+# define DEFAULT_IFACE			"enp0s3"
 # define MSG_SIZE				16
-# define ADDRESS				"sniffer"
+# define ADDRESS				"sniff"
 # define LOGFILE				"log.txt"
 # define SIZE_ETHERNET			14
+# define IP_STACK_SIZE			1024
 
-# define IS_RUNNING				0x80u
-# define IS_ACTIVE				0x40u
-# define IS_TO_LOG				0x20u
-# define IS_TO_SEND_IP_STAT		0x10u
-# define IS_TO_SEND_IFACE_STAT	0x08u
-# define IS_TO_EXIT				0x04u
+# define IS_TO_START			0x80u
+# define IS_TO_STOP				0x40u
+# define IS_ACTIVE				0x20u
+# define IS_TO_LOG				0x10u
+# define IS_TO_SEND_IP_STAT		0x08u
+# define IS_TO_SEND_IFACE_STAT	0x04u
+# define IS_TO_EXIT				0x02u
 
 typedef struct sockaddr_un	t_sockaddr_un;
 
@@ -53,18 +55,21 @@ typedef struct				s_sniff_ip {
 	u_char					ip_ttl;				/* time to live */
 	u_char					ip_p;				/* protocol */
 	u_short					ip_sum;				/* checksum */
-	struct in_addr			ip_src;				/* src ip address */
-	struct in_addr			ip_dst;				/* dst ip address */
+	struct in_addr			ip_src;				/* src ip_for_stat address */
+	struct in_addr			ip_dst;				/* dst ip_for_stat address */
 }							t_sniff_ip;
 
 typedef struct				s_sniffer_arg
 {
 	uint8_t					flags;
-	t_ip					ip;
+	t_ip					ip_stack[IP_STACK_SIZE];
+	int						stack_i;
+	t_ip					ip_for_stat;
 	char					iface[IFACE_SIZE];
 	char					iface_for_stat[IFACE_SIZE];
+	pcap_t					*pcap;
 	t_list					*ifaces;
-	FILE					*response_fp;
+	int						response_fd;
 }							t_sniffer_arg;
 
 int							ft_command_receiver(FILE *fp, t_sniffer_arg *sarg);

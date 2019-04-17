@@ -17,15 +17,16 @@ int		main(void)
     len = sizeof(addr.sun_family) + strlen(addr.sun_path);
     if (connect(sock, (struct sockaddr *)&addr, len) < 0)
 	{
-    	system("./daemon &");
-    	usleep(100000);
-
-    	if (connect(sock, (struct sockaddr *)&addr, len) < 0)
-		{
-    		system("killall daemon");
-        	perror("cli: connect");
-        	exit(1);
-		}
+    	printf("Can't connect to sniffer\n");
+//    	system("./sniffer &");
+//    	usleep(100000);
+//
+//    	if (connect(sock, (struct sockaddr *)&addr, len) < 0)
+//		{
+//    		system("killall sniffer");
+//        	perror("cli: connect");
+//        	exit(1);
+//		}
     }
 
     ft_listen_for_commands(sock);

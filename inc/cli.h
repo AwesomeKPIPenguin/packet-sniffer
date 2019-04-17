@@ -17,7 +17,6 @@ void		ft_get_ip_stat(int socket, t_ip ip);
 void		ft_select_iface(
 				int socket, const char *iface, char (*iface_ptr)[IFACE_SIZE]);
 void		ft_iface_stat(int socket, const char *iface);
-void		ft_run(int socket);
 void		ft_kill(int socket);
 
 t_ip		ft_get_ip(const char *command);
