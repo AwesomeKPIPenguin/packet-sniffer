@@ -1,16 +1,22 @@
 
 #include "sniff.h"
 
-void	ft_error(const char *msg)
+static void	ft_error(const char *msg)
 {
 	perror(msg);
 	exit(1);
 }
 
-FILE	*ft_set_connection(void)
+static void	ft_init_sarg(t_sniffer_arg *sarg)
 {
-	printf("in set connection\n");
+	sarg->flags = 0;
+	memset(sarg->iface, 0, IFACE_SIZE);
+	strncpy(sarg->iface, DEFAULT_IFACE, strlen(DEFAULT_IFACE));
+	sarg->ifaces = NULL;
+}
 
+static FILE	*ft_set_connection(void)
+{
     int				socket_fd;
     int				cli_socket_fd;
     unsigned int	fromlen;
@@ -42,51 +48,24 @@ FILE	*ft_set_connection(void)
 	return (fp);
 }
 
-void	ft_command_receiver(FILE *fp)
+
+int			main(void)
 {
-	int		c;
-    char	buffer[MSG_SIZE];
-
-	while (1)
-	{
-		memset(buffer, 0, MSG_SIZE);
-		c = 0;
-		for (int i = 0; c != '\n'; ++i)
-		{
-//			printf("in for BEFORE fgetc\n");
-			if ((c = fgetc(fp)) < 0)
-				return ;
-//			printf("in for AFTER fgetc\n");
-			buffer[i] = (char)c;
-		}
-		if (buffer[0])
-			printf("Received command: %s\n", buffer);
-
-		//ft_process_command(buffer);
-	}
-}
-
-int		main(void)
-{
+	int				res;
     FILE			*fp;
     pthread_t		thread;
     t_sniffer_arg	sarg;
 
-    sarg.is_active = 1;
-    sarg.is_to_log = 0;
-    memset(sarg.iface, 0, IFACE_SIZE);
-    strncpy(sarg.iface, DEFAULT_IFACE, strlen(DEFAULT_IFACE));
-    sarg.ifaces = NULL;
+	ft_init_sarg(&sarg);
     pthread_create(&thread, NULL, ft_sniff, (void *)(&sarg));
-
     while (1)
 	{
     	fp = ft_set_connection();
-		ft_command_receiver(fp);
+		res = ft_command_receiver(fp, &sarg);
+		if (!res)
+			break ;
 	}
-//
-//	close(sock);
-//
-//	exit(0);
-//	return (0);
+    pthread_join(thread, NULL);
+	fclose(fp);
+    return (0);
 }

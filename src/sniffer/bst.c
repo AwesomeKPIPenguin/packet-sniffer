@@ -121,7 +121,7 @@ void			ft_send_ip_count(
 
 static void		ft_send_formatted_info(t_node *node, FILE *fp)
 {
-	fprintf(fp, "  %3hhu.%3hhu.%3hhu.%3hhu: %-5d packets received\n",
+	fprintf(fp, "  %-3hhu.%-3hhu.%-3hhu.%-3hhu: %-6d packets received\n",
 		node->ip.bytes[0],
 		node->ip.bytes[1],
 		node->ip.bytes[2],
@@ -138,7 +138,7 @@ static void		ft_send_leaf_info(t_node *node, FILE *fp)
 		ft_send_leaf_info(node->right, fp);
 }
 
-void			ft_send_all_info(const char *iface, t_node **root, FILE *fp)
+void			ft_send_iface_info(const char *iface, t_node **root, FILE *fp)
 {
 	if (!root)
 		return ;

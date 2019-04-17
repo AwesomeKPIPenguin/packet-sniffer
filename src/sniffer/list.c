@@ -95,3 +95,47 @@ void			ft_write_log(const char *filename, t_list **head)
 	}
 	fclose(fp);
 }
+
+void			ft_send_ip_stat(t_list **head, t_ip ip, FILE *fp)
+{
+	t_list	*node;
+
+	fprintf(fp, "Stat for %hhu.%hhu.%hhu.%hhu:\n",
+		ip.bytes[0],
+		ip.bytes[1],
+		ip.bytes[2],
+		ip.bytes[3]);
+
+	node = *head;
+	while (node)
+	{
+		ft_send_ip_count(node->iface, &(node->bst), ip, fp);
+		node = node->next;
+	}
+	fflush(fp);
+}
+
+void			ft_send_iface_stat(t_list **head, const char *iface, FILE *fp)
+{
+	t_list	*node;
+
+	node = *head;
+	while (node)
+	{
+		if (strcmp(iface, node->iface) == 0)
+			break ;
+		node = node->next;
+	}
+	if (node)
+		ft_send_iface_info(iface, &(node->bst), fp);
+	else
+	{
+		node = *head;
+		while (node)
+		{
+			ft_send_iface_info(node->iface, &(node->bst), fp);
+			node = node->next;
+		}
+	}
+	fflush(fp);
+}

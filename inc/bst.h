@@ -24,5 +24,9 @@ t_node				*ft_nodenew(t_ip ip);
 void				ft_insert_ip(t_node **root, t_ip ip);
 void				ft_insert_node(t_node **root, t_node *node);
 void				ft_log_tree(FILE *fp, const char *iface, t_node **root);
+void				ft_send_ip_count(
+						const char *iface, t_node **root, t_ip ip, FILE *fp);
+void				ft_send_iface_info(
+						const char *iface, t_node **root, FILE *fp);
 
 #endif /* BST_H */

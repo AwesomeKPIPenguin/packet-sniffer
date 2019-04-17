@@ -50,6 +50,7 @@ static pcap_t	*ft_init_pcap(const char *iface, bpf_u_int32 net, char *errbuf)
 			filter_exp, pcap_geterr(handle));
 		return (NULL);
 	}
+	return (handle);
 }
 
 void			*ft_sniff(void *arg)
@@ -68,6 +69,11 @@ void			*ft_sniff(void *arg)
 	t_ip				source_ip;
 
 	sarg = (t_sniffer_arg *)arg;
+
+//	FILE *response_fp = fopen("response.txt", "a+");
+//	sarg->response_fp = response_fp;
+//	sarg->is_to_send_iface_stat = 1;
+//	strcpy(sarg->iface_for_stat, "jopa");
 
 	/* initializing ip tree from log file */
 
@@ -93,28 +99,44 @@ void			*ft_sniff(void *arg)
     while (1)
 //	for (int i = 0; i < 10; ++i)
     {
-    	if (!sarg->is_active)
+		if (strcmp(sarg->iface, iface) != 0)
+			iface = ft_bind_to_iface(sarg->iface, &net, &mask, errbuf);
+		if (sarg->flags & IS_TO_SEND_IP_STAT)
+		{
+			ft_send_ip_stat(&(sarg->ifaces), sarg->ip, sarg->response_fp);
+			sarg->flags &= ~IS_TO_SEND_IP_STAT;
+		}
+		if (sarg->flags & IS_TO_SEND_IFACE_STAT)
+		{
+			ft_send_iface_stat(
+				&(sarg->ifaces), sarg->iface_for_stat, sarg->response_fp);
+			sarg->flags &= ~IS_TO_SEND_IFACE_STAT;
+		}
+		if (sarg->flags & IS_TO_EXIT)
+		{
+			ft_write_log(LOGFILE, &(sarg->ifaces));
+			return (NULL);
+		}
+    	if (!(sarg->flags & IS_ACTIVE))
 		{
             printf("Sleeping...\n");
-    		if (sarg->is_to_log)
+    		if (sarg->flags & IS_TO_LOG)
 			{
 				ft_write_log(LOGFILE, &(sarg->ifaces));
-				sarg->is_to_log = 0;
+				sarg->flags &= ~IS_TO_LOG;
 			}
     		usleep(500000); /* 0.5s */
 			continue ;
 		}
-    	if (strcmp(sarg->iface, iface) != 0)
-			iface = ft_bind_to_iface(sarg->iface, &net, &mask, errbuf);
 
-//        printf("Active\n");
+        printf("Active\n");
 
 		packet = pcap_next(handle, &header);
 		ip = (t_sniff_ip *)(packet + SIZE_ETHERNET);
 //		printf("source ip: %s\n", inet_ntoa(ip->ip_src));
 		source_ip.num = ip->ip_src.s_addr;
         ft_insert_ip(&(iface_list->bst), source_ip);
-        ft_write_log(LOGFILE, &(sarg->ifaces));
+//		ft_write_log(LOGFILE, &(sarg->ifaces));
     }
 	return (NULL);
 }

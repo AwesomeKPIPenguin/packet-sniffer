@@ -25,11 +25,18 @@
 # include <linux/if_packet.h>
 # include <arpa/inet.h>
 
-# define DEFAULT_IFACE		"eth0"
-# define MSG_SIZE			16
-# define ADDRESS			"sniffer"
-# define LOGFILE			"log.txt"
-# define SIZE_ETHERNET		14
+# define DEFAULT_IFACE			"lo"
+# define MSG_SIZE				16
+# define ADDRESS				"sniffer"
+# define LOGFILE				"log.txt"
+# define SIZE_ETHERNET			14
+
+# define IS_RUNNING				0x80u
+# define IS_ACTIVE				0x40u
+# define IS_TO_LOG				0x20u
+# define IS_TO_SEND_IP_STAT		0x10u
+# define IS_TO_SEND_IFACE_STAT	0x08u
+# define IS_TO_EXIT				0x04u
 
 typedef struct sockaddr_un	t_sockaddr_un;
 
@@ -52,13 +59,15 @@ typedef struct				s_sniff_ip {
 
 typedef struct				s_sniffer_arg
 {
-	int						is_active;
-	int						is_to_log;
+	uint8_t					flags;
+	t_ip					ip;
 	char					iface[IFACE_SIZE];
+	char					iface_for_stat[IFACE_SIZE];
 	t_list					*ifaces;
 	FILE					*response_fp;
 }							t_sniffer_arg;
 
+int							ft_command_receiver(FILE *fp, t_sniffer_arg *sarg);
 void						*ft_sniff(void *arg);
 
 #endif /* SNIFF_H */

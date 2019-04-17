@@ -22,6 +22,7 @@ int		main(void)
 
     	if (connect(sock, (struct sockaddr *)&addr, len) < 0)
 		{
+    		system("killall daemon");
         	perror("cli: connect");
         	exit(1);
 		}
