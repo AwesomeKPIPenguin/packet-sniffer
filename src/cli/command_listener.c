@@ -31,11 +31,9 @@ void	ft_listen_for_commands(int socket)
 	{
 		while (1)
 		{
-//		printf("Selected iface: %s\n", iface);
 			printf(" > ");
 			memset(command, 0, BUFF_SIZE);
 			fgets(command, BUFF_SIZE, stdin);
-//		printf("Received command: %s", command);
 			cmd_len = strchr(command, '\n') - command;
 
 			if (cmd_len == 5

@@ -55,15 +55,15 @@ void	ft_select_iface(
 	size_t	len;
 
 	len = strchr(iface, '\n') - iface;
-	memset(*iface_ptr, 0, strlen(*iface_ptr));
+	bzero(*iface_ptr, strlen(*iface_ptr));
 	strncpy(*iface_ptr, iface, len);
-	memset(msg, ' ', MSG_SIZE);
+	bzero(msg, MSG_SIZE);
 
 	/* command code - 3 */
-	msg[0] = '3';
-	msg[MSG_SIZE - 1] = '\n';
+	sprintf(msg, "3 %s\n", *iface_ptr);
 
-	strncpy(&(msg[2]), iface, len);
+	printf("Sent: %s\n", msg);
+
 	send(socket, msg, strlen(msg), 0);
 }
 

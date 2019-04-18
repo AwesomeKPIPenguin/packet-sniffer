@@ -79,8 +79,6 @@ static FILE	*ft_set_connection(int *cli_socket_fd)
     fp = fdopen(*cli_socket_fd, "r");
 	if (!fp)
     	ft_error("daemon: fdopen");
-//	setvbuf(fp, NULL, _IONBF, 0);
-
 	return (fp);
 }
 
@@ -94,8 +92,6 @@ int			main(void)
     t_sniffer_arg	*sarg;
 
 	sarg = ft_init_sarg();
-
-//	sarg.flags |= IS_ACTIVE;
 
     pthread_create(&thread, NULL, ft_sniff, (void *)(sarg));
     while (1)

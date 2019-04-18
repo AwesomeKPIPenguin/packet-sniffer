@@ -43,7 +43,7 @@
 typedef struct sockaddr_un	t_sockaddr_un;
 
 typedef struct				s_sniff_ip {
-	u_char					ip_vhl;				/* version << 4 | header length >> 2 */
+	u_char					ip_vhl;				/* ver << 4 | hdr len >> 2 */
 	u_char					ip_tos;				/* type of service */
 	u_short					ip_len;				/* total length */
 	u_short					ip_id;				/* identification */

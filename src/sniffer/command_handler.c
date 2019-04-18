@@ -5,20 +5,13 @@ static int	ft_handle_command(t_sniffer_arg *sarg, const char cmd[MSG_SIZE])
 {
 	if (cmd[0] == '0')		/* start */
 	{
-		printf("Received Start\n");
 		if (!(sarg->flags & IS_ACTIVE))
-		{
-			printf("To Start is set\n");
 			sarg->flags |= IS_TO_START;
-		}
 	}
 	else if (cmd[0] == '1')	/* stop */
 	{
-		printf("Received stop\n");
-
 		if (sarg->flags & IS_ACTIVE)
 		{
-			printf("To Stop is set\n");
 			sarg->flags |= IS_TO_LOG;
 			sarg->flags |= IS_TO_STOP;
 		}
@@ -30,9 +23,10 @@ static int	ft_handle_command(t_sniffer_arg *sarg, const char cmd[MSG_SIZE])
 		ft_send_ip_stat(&(sarg->ifaces), sarg->ip_for_stat, sarg->response_fd);
 		sarg->flags &= ~IS_TO_SEND_IP_STAT;
 	}
-	else if (cmd[0] == '3')	/* select [iface] */
+	else if (cmd[0] == '3')	/* select iface [iface] */
 	{
-		strncpy(sarg->iface, &(cmd[2]), IFACE_SIZE);
+		bzero(sarg->iface, IFACE_SIZE);
+		strncpy(sarg->iface, &(cmd[2]), strchr(cmd, '\n') - &(cmd[2]));
 	}
 	else if (cmd[0] == '4')	/* stat [iface] */
 	{
@@ -61,12 +55,8 @@ int			ft_command_receiver(FILE *fp, t_sniffer_arg *sarg)
 		c = 0;
 		for (int i = 0; c != '\n'; ++i)
 		{
-			printf("in for\n");
 			if ((c = fgetc(fp)) < 0)
-			{
-				printf("return\n");
 				return (1);
-			}
 			buffer[i] = (char)c;
 		}
 		if (!ft_handle_command(sarg, buffer))

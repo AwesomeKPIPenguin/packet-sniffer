@@ -3,7 +3,35 @@
 #include <sys/mman.h>
 #include "sniff.h"
 
-t_sniffer_arg		*sarg;
+t_sniffer_arg	*sarg;
+
+static pcap_t	*ft_init_pcap(const char *iface, bpf_u_int32 net, char *errbuf)
+{
+	pcap_t				*handle;
+	struct bpf_program	fp;
+	char				filter_exp[] = "";
+
+	handle = pcap_open_live(iface, BUFSIZ, 1, 1000, errbuf);
+	if (handle == NULL)
+	{
+		fprintf(stderr, "Couldn't open device %s: %s\n",
+				iface, errbuf);
+		return (NULL);
+	}
+	if (pcap_compile(handle, &fp, filter_exp, 0, net) == -1)
+	{
+		fprintf(stderr, "Couldn't parse filter %s: %s\n",
+				filter_exp, pcap_geterr(handle));
+		return (NULL);
+	}
+	if (pcap_setfilter(handle, &fp) == -1)
+	{
+		fprintf(stderr, "Couldn't install filter %s: %s\n",
+				filter_exp, pcap_geterr(handle));
+		return (NULL);
+	}
+	return (handle);
+}
 
 static char		*ft_bind_to_iface(
 					const char *iface,
@@ -26,35 +54,8 @@ static char		*ft_bind_to_iface(
 			}
 		}
 	}
+	sarg->pcap = ft_init_pcap(iface, *net, errbuf);
 	return ((char *)iface);
-}
-
-static pcap_t	*ft_init_pcap(const char *iface, bpf_u_int32 net, char *errbuf)
-{
-	pcap_t				*handle;
-	struct bpf_program	fp;
-	char				filter_exp[] = "";
-
-	handle = pcap_open_live(iface, BUFSIZ, 1, 1000, errbuf);
-	if (handle == NULL)
-	{
-		fprintf(stderr, "Couldn't open device %s: %s\n",
-			iface, errbuf);
-		return (NULL);
-	}
-	if (pcap_compile(handle, &fp, filter_exp, 0, net) == -1)
-	{
-		fprintf(stderr, "Couldn't parse filter %s: %s\n",
-			filter_exp, pcap_geterr(handle));
-		return (NULL);
-	}
-	if (pcap_setfilter(handle, &fp) == -1)
-	{
-		fprintf(stderr, "Couldn't install filter %s: %s\n",
-			filter_exp, pcap_geterr(handle));
-		return (NULL);
-	}
-	return (handle);
 }
 
 void			ft_interrupt(int sig)
@@ -62,7 +63,7 @@ void			ft_interrupt(int sig)
 	exit(EXIT_SUCCESS);
 }
 
-static void		ft_listen(char *iface, bpf_u_int32 *mask, bpf_u_int32 *net, char *errbuf, t_list *iface_list)
+static void		ft_listen(char iface[IFACE_SIZE], bpf_u_int32 *mask, bpf_u_int32 *net, char *errbuf, t_list *iface_list)
 {
 	struct pcap_pkthdr	header;
 	const u_char		*packet;
@@ -80,41 +81,28 @@ static void		ft_listen(char *iface, bpf_u_int32 *mask, bpf_u_int32 *net, char *e
 			if (sarg->flags & IS_TO_START)
 			{
 				sarg->flags |= IS_ACTIVE;
-				printf("Starting, is active in parent = %u\n", sarg->flags & IS_ACTIVE);
 				sarg->flags &= ~IS_TO_START;
 			}
 			if (sarg->flags & IS_TO_STOP)
 			{
-				printf("Stopping\n");
 				sarg->flags &= ~IS_ACTIVE;
-				printf("Flag changed\n");
 				ft_write_log(LOGFILE, &(sarg->ifaces));
-				printf("Logged\n");
 				sarg->flags &= ~IS_TO_STOP;
-				printf("Flag changed\n");
 			}
 			if (strcmp(sarg->iface, iface) != 0)
-				iface = ft_bind_to_iface(sarg->iface, net, mask, errbuf);
+			{
+				bzero(iface, IFACE_SIZE);
+				strcpy(iface, ft_bind_to_iface(sarg->iface, net, mask, errbuf));
+			}
 			if (sarg->flags & IS_TO_EXIT)
 			{
-				printf("Killing child\n");
-//				ft_write_log(LOGFILE, &(sarg->ifaces));
 				kill(pid, SIGINT);
 				return;
 			}
 			if (sarg->flags & IS_ACTIVE && sarg->stack_i)
 			{
-				printf("stack_i: %d\n", sarg->stack_i);
-
 				for (--sarg->stack_i; sarg->stack_i >= 0; --sarg->stack_i)
 				{
-					printf("stack[%d]: %hhu.%hhu.%hhu.%hhu\n",
-						sarg->stack_i,
-						sarg->ip_stack[sarg->stack_i].bytes[0],
-						sarg->ip_stack[sarg->stack_i].bytes[1],
-						sarg->ip_stack[sarg->stack_i].bytes[2],
-						sarg->ip_stack[sarg->stack_i].bytes[3]);
-
 					if (sarg->ip_stack[sarg->stack_i].num)
 					{
 						ft_insert_ip(
@@ -136,7 +124,6 @@ static void		ft_listen(char *iface, bpf_u_int32 *mask, bpf_u_int32 *net, char *e
 //			printf("Passed packet recv\n");
 //			printf("Is active in child = %u\n", sarg->flags & IS_ACTIVE);
 			ip = (t_sniff_ip *)(packet + SIZE_ETHERNET);
-			printf("RECV: %s\n", inet_ntoa(ip->ip_src));
 			if (sarg->flags & IS_ACTIVE)
 			{
 				sarg->ip_stack[sarg->stack_i++].num = ip->ip_src.s_addr;
@@ -151,7 +138,7 @@ static void		ft_listen(char *iface, bpf_u_int32 *mask, bpf_u_int32 *net, char *e
 
 void			*ft_sniff(void *arg)
 {
-	char				*iface;
+	char				iface[IFACE_SIZE];
 	char				errbuf[PCAP_ERRBUF_SIZE];
 	bpf_u_int32			mask;
 	bpf_u_int32			net;
@@ -176,9 +163,9 @@ void			*ft_sniff(void *arg)
 
 	/* initializing pcap data */
 
-	iface = ft_bind_to_iface(sarg->iface, &net, &mask, errbuf);
+	bzero(iface, IFACE_SIZE);
+	strcpy(iface, ft_bind_to_iface(sarg->iface, &net, &mask, errbuf));
 	iface_list = ft_search_iface(&(sarg->ifaces), iface);
-	sarg->pcap = ft_init_pcap(iface, net, errbuf);
 	if (!sarg->pcap)
 		return (NULL);
 
