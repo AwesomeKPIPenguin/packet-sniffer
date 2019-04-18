@@ -3,12 +3,24 @@
 
 static void	ft_usage()
 {
-	printf("Usage: \n");
+	printf("Usage: start\n");
+	printf("       stop\n");
+	printf("       show [ip] count\n");
+	printf("       select iface [iface] (! not supported yet !)\n");
+	printf("       stat [iface]\n");
+	printf("       --help\n");
+	printf("       kill\n");
 }
 
 static void	ft_help()
 {
-	printf("Usage: \n");
+	printf("Usage: start                - sniffed packets starts counting (default iface)\n");
+	printf("       stop                 - sniffed packets stops counting\n");
+	printf("       show [ip] count      - shows the number of packets, received from [ip]\n");
+	printf("       select iface [iface] (! not supported yet !)\n");
+	printf("       stat [iface]         - show statistic for [iface]\n");
+	printf("       --help               - this message is shown\n");
+	printf("       kill                 - kills the sniffer process\n");
 }
 
 void	ft_listen_for_commands(int socket)
