@@ -51,33 +51,32 @@ void	ft_get_ip_stat(int socket, t_ip ip)
 void	ft_select_iface(
 			int socket, const char *iface, char (*iface_ptr)[IFACE_SIZE])
 {
-	char	msg[MSG_SIZE];
+	char	cmd[64];
 	size_t	len;
 
 	len = strchr(iface, '\n') - iface;
 	bzero(*iface_ptr, strlen(*iface_ptr));
 	strncpy(*iface_ptr, iface, len);
-	bzero(msg, MSG_SIZE);
+	bzero(cmd, 64);
+	sprintf(cmd, "./sniffer %s &", *iface_ptr);
 
 	/* command code - 3 */
-	sprintf(msg, "3 %s\n", *iface_ptr);
-
-	printf("Sent: %s\n", msg);
-
-	send(socket, msg, strlen(msg), 0);
+	send(socket, "3\n", 2, 0);
+	usleep(500000);
+	system(cmd);
+	usleep(100000);
+	system("./cli");
+	exit(EXIT_SUCCESS);
 }
 
 void	ft_iface_stat(int socket, const char *iface)
 {
 	char	msg[MSG_SIZE];
 
-	memset(msg, ' ', MSG_SIZE);
+	bzero(msg, MSG_SIZE);
 
 	/* command code - 4 */
-	msg[0] = '4';
-
-	msg[MSG_SIZE - 1] = '\n';
-	strncpy(&(msg[2]), iface, strlen(iface));
+	sprintf(msg, "4 %s\n", iface);
 	send(socket, msg, strlen(msg), 0);
 }
 

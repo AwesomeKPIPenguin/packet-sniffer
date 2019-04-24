@@ -32,13 +32,15 @@
 # define SIZE_ETHERNET			14
 # define IP_STACK_SIZE			1024
 
-# define IS_TO_START			0x80u
-# define IS_TO_STOP				0x40u
-# define IS_ACTIVE				0x20u
-# define IS_TO_LOG				0x10u
-# define IS_TO_SEND_IP_STAT		0x08u
-# define IS_TO_SEND_IFACE_STAT	0x04u
-# define IS_TO_EXIT				0x02u
+# define IS_TO_START			0x8000u
+# define IS_TO_STOP				0x4000u
+# define IS_ACTIVE				0x2000u
+# define IS_TO_LOG				0x1000u
+# define IS_TO_SEND_IP_STAT		0x0800u
+# define IS_TO_SEND_IFACE_STAT	0x0400u
+# define IS_TO_EXIT				0x0200u
+# define IS_READING_STACK		0x0100u
+# define IS_WRITTING_STACK		0x0080u
 
 typedef struct sockaddr_un	t_sockaddr_un;
 
@@ -61,7 +63,7 @@ typedef struct				s_sniff_ip {
 
 typedef struct				s_sniffer_arg
 {
-	uint8_t					flags;
+	uint16_t				flags;
 	t_ip					ip_stack[IP_STACK_SIZE];
 	int						stack_i;
 	t_ip					ip_for_stat;

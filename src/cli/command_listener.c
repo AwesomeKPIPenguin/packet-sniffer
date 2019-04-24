@@ -6,10 +6,11 @@ static void	ft_usage()
 	printf("Usage: start\n");
 	printf("       stop\n");
 	printf("       show [ip] count\n");
-	printf("       select iface [iface] (! not supported yet !)\n");
+	printf("       select iface [iface]\n");
 	printf("       stat [iface]\n");
-	printf("       --help\n");
+	printf("       run\n");
 	printf("       kill\n");
+	printf("       --help\n");
 }
 
 static void	ft_help()
@@ -17,13 +18,15 @@ static void	ft_help()
 	printf("Usage: start                - sniffed packets starts counting (default iface)\n");
 	printf("       stop                 - sniffed packets stops counting\n");
 	printf("       show [ip] count      - shows the number of packets, received from [ip]\n");
-	printf("       select iface [iface] (! not supported yet !)\n");
+	printf("       select iface [iface] - select interface for sniffing\n");
 	printf("       stat [iface]         - show statistic for [iface]\n");
-	printf("       --help               - this message is shown\n");
+	printf("       run                  - starts the sniffer process\n");
 	printf("       kill                 - kills the sniffer process\n");
+	printf("       --help               - this message is shown\n");
 }
 
-void	ft_listen_for_commands(int socket)
+void		ft_listen_for_commands(
+				int socket, t_sockaddr_un *addr, unsigned int len)
 {
 	int			is_running;
 	t_ip		ip;
@@ -44,7 +47,7 @@ void	ft_listen_for_commands(int socket)
 		while (1)
 		{
 			printf(" > ");
-			memset(command, 0, BUFF_SIZE);
+			bzero(command, BUFF_SIZE);
 			fgets(command, BUFF_SIZE, stdin);
 			cmd_len = strchr(command, '\n') - command;
 
@@ -65,15 +68,20 @@ void	ft_listen_for_commands(int socket)
 			}
 			else if (cmd_len >= 14
 					&& strncmp(command, "select iface ", 13) == 0)
+			{
 				ft_select_iface(socket, &(command[13]), &iface);
+				connect(socket, (struct sockaddr *)&addr, len);
+			}
 			else if (cmd_len >= 6
 					&& strncmp(command, "stat ", 5) == 0)
 				ft_iface_stat(socket, &(command[5]));
 			else if (strncmp(command, "run", cmd_len) == 0)
 			{
 				if (!is_running)
-					system("./sniffer &");
-				is_running = 1;
+				{
+					system("./cli");
+					exit(EXIT_SUCCESS);
+				}
 			}
 			else if (cmd_len == 4
 					&& strncmp(command, "kill", cmd_len) == 0)

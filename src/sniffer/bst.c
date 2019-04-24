@@ -134,6 +134,7 @@ void			ft_send_iface_info(const char *iface, t_node **root, int socket)
 	if (!root)
 		return ;
 
+	send(socket, "\n", 1, 0);
 	send(socket, iface, strlen(iface), 0);
 	send(socket, ":\n", 2, 0);
 	ft_send_leaf_info(*root, socket);

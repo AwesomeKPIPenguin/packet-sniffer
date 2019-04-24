@@ -5,29 +5,14 @@
 
 t_sniffer_arg	*sarg;
 
-static pcap_t	*ft_init_pcap(const char *iface, bpf_u_int32 net, char *errbuf)
+static pcap_t	*ft_init_pcap(const char *iface, char *errbuf)
 {
-	pcap_t				*handle;
-	struct bpf_program	fp;
-	char				filter_exp[] = "";
+	pcap_t	*handle;
 
 	handle = pcap_open_live(iface, BUFSIZ, 1, 1000, errbuf);
 	if (handle == NULL)
 	{
-		fprintf(stderr, "Couldn't open device %s: %s\n",
-				iface, errbuf);
-		return (NULL);
-	}
-	if (pcap_compile(handle, &fp, filter_exp, 0, net) == -1)
-	{
-		fprintf(stderr, "Couldn't parse filter %s: %s\n",
-				filter_exp, pcap_geterr(handle));
-		return (NULL);
-	}
-	if (pcap_setfilter(handle, &fp) == -1)
-	{
-		fprintf(stderr, "Couldn't install filter %s: %s\n",
-				filter_exp, pcap_geterr(handle));
+		fprintf(stderr, "Couldn't open device %s: %s\n", iface, errbuf);
 		return (NULL);
 	}
 	return (handle);
@@ -54,8 +39,11 @@ static char		*ft_bind_to_iface(
 			}
 		}
 	}
-	sarg->pcap = ft_init_pcap(iface, *net, errbuf);
-	return ((char *)iface);
+	sarg->pcap = ft_init_pcap(iface, errbuf);
+	if (!sarg->pcap)
+		return (NULL);
+	else
+		return ((char *)iface);
 }
 
 void			ft_interrupt(int sig)
@@ -63,7 +51,7 @@ void			ft_interrupt(int sig)
 	exit(EXIT_SUCCESS);
 }
 
-static void		ft_listen(char iface[IFACE_SIZE], bpf_u_int32 *mask, bpf_u_int32 *net, char *errbuf, t_list *iface_list)
+static void		ft_listen(t_list *iface_list)
 {
 	struct pcap_pkthdr	header;
 	const u_char		*packet;
@@ -73,11 +61,9 @@ static void		ft_listen(char iface[IFACE_SIZE], bpf_u_int32 *mask, bpf_u_int32 *n
 	signal(SIGINT, ft_interrupt);
 	pid = fork();
 	while (1)
-//	for (int i = 0; i < 10; ++i)
 	{
 		if (pid != 0)	/* parent */
 		{
-//			printf("Parent\n");
 			if (sarg->flags & IS_TO_START)
 			{
 				sarg->flags |= IS_ACTIVE;
@@ -89,11 +75,6 @@ static void		ft_listen(char iface[IFACE_SIZE], bpf_u_int32 *mask, bpf_u_int32 *n
 				ft_write_log(LOGFILE, &(sarg->ifaces));
 				sarg->flags &= ~IS_TO_STOP;
 			}
-			if (strcmp(sarg->iface, iface) != 0)
-			{
-				bzero(iface, IFACE_SIZE);
-				strcpy(iface, ft_bind_to_iface(sarg->iface, net, mask, errbuf));
-			}
 			if (sarg->flags & IS_TO_EXIT)
 			{
 				kill(pid, SIGINT);
@@ -101,6 +82,9 @@ static void		ft_listen(char iface[IFACE_SIZE], bpf_u_int32 *mask, bpf_u_int32 *n
 			}
 			if (sarg->flags & IS_ACTIVE && sarg->stack_i)
 			{
+				while (sarg->flags & IS_WRITTING_STACK) ;
+
+				sarg->flags |= IS_READING_STACK;
 				for (--sarg->stack_i; sarg->stack_i >= 0; --sarg->stack_i)
 				{
 					if (sarg->ip_stack[sarg->stack_i].num)
@@ -111,6 +95,7 @@ static void		ft_listen(char iface[IFACE_SIZE], bpf_u_int32 *mask, bpf_u_int32 *n
 					}
 				}
 				++sarg->stack_i;
+				sarg->flags &= ~IS_READING_STACK;
 				ft_write_log(LOGFILE, &(sarg->ifaces));
 			}
 			else
@@ -119,19 +104,18 @@ static void		ft_listen(char iface[IFACE_SIZE], bpf_u_int32 *mask, bpf_u_int32 *n
 		}
 		else			/* child */
 		{
-//			printf("Receiving packet\n");
 			packet = pcap_next(sarg->pcap, &header);
-//			printf("Passed packet recv\n");
-//			printf("Is active in child = %u\n", sarg->flags & IS_ACTIVE);
 			ip = (t_sniff_ip *)(packet + SIZE_ETHERNET);
 			if (sarg->flags & IS_ACTIVE)
 			{
+				while (sarg->flags & IS_READING_STACK) ;
+
+				sarg->flags |= IS_WRITTING_STACK;
 				sarg->ip_stack[sarg->stack_i++].num = ip->ip_src.s_addr;
 				if (sarg->stack_i == IP_STACK_SIZE)
 					--sarg->stack_i;
+				sarg->flags &= ~IS_WRITTING_STACK;
 			}
-//			ft_insert_ip(&(iface_list->bst), source_ip);
-//			ft_write_log(LOGFILE, &(sarg->ifaces));
 		}
 	}
 }
@@ -139,6 +123,7 @@ static void		ft_listen(char iface[IFACE_SIZE], bpf_u_int32 *mask, bpf_u_int32 *n
 void			*ft_sniff(void *arg)
 {
 	char				iface[IFACE_SIZE];
+	char				*binded_iface;
 	char				errbuf[PCAP_ERRBUF_SIZE];
 	bpf_u_int32			mask;
 	bpf_u_int32			net;
@@ -147,12 +132,7 @@ void			*ft_sniff(void *arg)
 
 	sarg = (t_sniffer_arg *)arg;
 
-//	FILE *response_fp = fopen("response.txt", "a+");
-//	sarg->response_fp = response_fp;
-//	sarg->is_to_send_iface_stat = 1;
-//	strcpy(sarg->iface_for_stat, "jopa");
-
-	/* initializing ip_for_stat tree from log file */
+	/* initializing ip tree from log file */
 
 	logfile = fopen(LOGFILE, "r");
 	if (logfile > 0)
@@ -164,14 +144,17 @@ void			*ft_sniff(void *arg)
 	/* initializing pcap data */
 
 	bzero(iface, IFACE_SIZE);
-	strcpy(iface, ft_bind_to_iface(sarg->iface, &net, &mask, errbuf));
+	binded_iface = ft_bind_to_iface(sarg->iface, &net, &mask, errbuf);
+	if (!binded_iface)
+		return (NULL);
+	strcpy(iface, binded_iface);
 	iface_list = ft_search_iface(&(sarg->ifaces), iface);
 	if (!sarg->pcap)
 		return (NULL);
 
 	/* listening */
 
-	ft_listen(iface, &mask, &net, errbuf, iface_list);
+	ft_listen(iface_list);
 
 	return (NULL);
 }

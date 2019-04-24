@@ -23,20 +23,16 @@ static int	ft_handle_command(t_sniffer_arg *sarg, const char cmd[MSG_SIZE])
 		ft_send_ip_stat(&(sarg->ifaces), sarg->ip_for_stat, sarg->response_fd);
 		sarg->flags &= ~IS_TO_SEND_IP_STAT;
 	}
-	else if (cmd[0] == '3')	/* select iface [iface] */
-	{
-		bzero(sarg->iface, IFACE_SIZE);
-		strncpy(sarg->iface, &(cmd[2]), strchr(cmd, '\n') - &(cmd[2]));
-	}
 	else if (cmd[0] == '4')	/* stat [iface] */
 	{
-		strncpy(sarg->iface_for_stat, &(cmd[2]), IFACE_SIZE);
+		bzero(sarg->iface_for_stat, IFACE_SIZE);
+		strncpy(sarg->iface_for_stat, &(cmd[2]), strchr(cmd, '\n') - &(cmd[2]));
 		sarg->flags |= IS_TO_SEND_IFACE_STAT;
 		ft_send_iface_stat(
 			&(sarg->ifaces), sarg->iface_for_stat, sarg->response_fd);
 		sarg->flags &= ~IS_TO_SEND_IFACE_STAT;
 	}
-	else if (cmd[0] == '5')	/* kill */
+	else if (cmd[0] == '3' || cmd[0] == '5') /* select iface [iface]; kill */
 	{
 		sarg->flags |= IS_TO_EXIT;
 		return (0);

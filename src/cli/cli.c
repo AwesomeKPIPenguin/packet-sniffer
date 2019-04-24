@@ -28,7 +28,7 @@ int		main(void)
 		}
     }
 
-    ft_listen_for_commands(sock);
+    ft_listen_for_commands(sock, &addr, len);
 
     close(sock);
 	return (0);

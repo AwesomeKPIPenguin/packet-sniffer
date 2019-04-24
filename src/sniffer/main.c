@@ -2,13 +2,13 @@
 #include <sys/mman.h>
 #include "sniff.h"
 
-static void	ft_error(const char *msg)
+static void				ft_error(const char *msg)
 {
 	perror(msg);
 	exit(1);
 }
 
-static void	ft_free_tree(t_node *node)
+static void				ft_free_tree(t_node *node)
 {
 	if (node->left)
 		ft_free_tree(node->left);
@@ -17,20 +17,20 @@ static void	ft_free_tree(t_node *node)
 	munmap(node, sizeof(t_node));
 }
 
-static void	ft_free_list(t_list *node)
+static void				ft_free_list(t_list *node)
 {
 	if (node->next)
 		ft_free_list(node->next);
 	munmap(node, sizeof(t_list));
 }
 
-static void	ft_free_sarg(t_sniffer_arg *sarg)
+static void				ft_free_sarg(t_sniffer_arg *sarg)
 {
 	ft_free_list(sarg->ifaces);
 	munmap(sarg, sizeof(t_sniffer_arg));
 }
 
-static t_sniffer_arg	*ft_init_sarg(void)
+static t_sniffer_arg	*ft_init_sarg(char *iface)
 {
 	t_sniffer_arg	*sarg;
 
@@ -48,11 +48,11 @@ static t_sniffer_arg	*ft_init_sarg(void)
 	sarg->response_fd = 0;
 	bzero(sarg->iface, IFACE_SIZE);
 	bzero(sarg->ip_stack, IP_STACK_SIZE * sizeof(t_ip));
-	strncpy(sarg->iface, DEFAULT_IFACE, strlen(DEFAULT_IFACE));
+	strncpy(sarg->iface, iface, strlen(iface));
 	return (sarg);
 }
 
-static FILE	*ft_set_connection(int *cli_socket_fd)
+static FILE				*ft_set_connection(int *cli_socket_fd)
 {
     int				socket_fd;
     unsigned int	fromlen;
@@ -83,7 +83,7 @@ static FILE	*ft_set_connection(int *cli_socket_fd)
 }
 
 
-int			main(void)
+int						main(int argc, char **argv)
 {
 	int				res;
 	int				socket;
@@ -91,13 +91,23 @@ int			main(void)
     pthread_t		thread;
     t_sniffer_arg	*sarg;
 
-	sarg = ft_init_sarg();
-
-    pthread_create(&thread, NULL, ft_sniff, (void *)(sarg));
-    while (1)
+	if (argc > 2)
 	{
-    	fp = ft_set_connection(&socket);
-    	sarg->response_fd = socket;
+		printf("Error: Too many arguments\n");
+		return (1);
+	}
+	else if (argc == 2)
+		sarg = ft_init_sarg(argv[1]);
+	else
+		sarg = ft_init_sarg(DEFAULT_IFACE);
+
+	printf("Iface: %s\n", sarg->iface);
+
+	pthread_create(&thread, NULL, ft_sniff, (void *)(sarg));
+	while (1)
+	{
+		fp = ft_set_connection(&socket);
+		sarg->response_fd = socket;
 		res = ft_command_receiver(fp, sarg);
 		if (!res)
 			break ;

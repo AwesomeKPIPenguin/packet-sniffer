@@ -10,7 +10,8 @@
 
 # define BUFF_SIZE	128
 
-void		ft_listen_for_commands(int socket);
+void		ft_listen_for_commands(
+				int socket, t_sockaddr_un *addr, unsigned int len);
 void		ft_start(int socket);
 void		ft_stop(int socket);
 void		ft_get_ip_stat(int socket, t_ip ip);
