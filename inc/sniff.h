@@ -25,7 +25,7 @@
 # include <linux/if_packet.h>
 # include <arpa/inet.h>
 
-# define DEFAULT_IFACE			"enp0s3"
+# define DEFAULT_IFACE			"eth0"
 # define MSG_SIZE				16
 # define ADDRESS				"sniff"
 # define LOGFILE				"log.txt"
